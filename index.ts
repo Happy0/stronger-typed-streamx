@@ -1,7 +1,8 @@
 import * as StreamX from "streamx";
 
 export type ReadableOptions<S extends Readable<O>, O> = Omit<StreamX.ReadableOptions<S>, 'mapReadable' | 'map'>;
-export type DuplexOptions<S extends Duplex<I,O>, I, O> = Omit<StreamX.DuplexOptions<S>, 'mapReadable' | 'mapWritable' | 'map'>;
+export type DuplexOptions<S extends Duplex<I,O>, I, O> = Omit<StreamX.DuplexOptions<S>, 'mapReadable' | 'mapWritable' | 'map'> 
+    & WritableOptions<S, O> & ReadableOptions<S,I>
 
 export type WritableOptions<S extends Writable<O>, O> = Omit<StreamX.WritableOptions<S>, 'mapWritable' | 'map' | 'write' | 'writev'> & {
   write?(this: S, data: O, cb: (err: Error | null) => void): void
@@ -62,7 +63,7 @@ export class Readable<
   }
 }
 
-export  class Writable<
+export class Writable<
   Output,
   WritableEvents extends StreamX.WritableEvents = StreamX.WritableEvents,
 > extends StreamX.Writable<WritableEvents> {
@@ -72,6 +73,10 @@ export  class Writable<
 
   write(data: Output): boolean {
     return super.write(data);
+  }
+
+  end(data: Output): this {
+    return super.end(data);
   }
 }
 
@@ -106,13 +111,17 @@ export class Duplex<Input, Output, M extends TypedDuplexEvents<Input, Output> = 
         return super.read() as Input;
     }
 
-    push(data: Input): boolean {
+    push(data: Input | null): boolean {
         return super.push(data)
     }
 
     write(data: Output): boolean {
         return super.write(data)
     }
+
+    end(data: Output): this {
+    return super.end(data);
+  }
 }
 
 export class Transform<
@@ -151,35 +160,29 @@ export class Transform<
     write(data: Output): boolean {
         return super.write(data)
     }
+
+    end(data: Output): this {
+        return super.end(data);
+    }
 }
 
 let count = 0;
 
-const testaroonie = 
-    new Readable<number>({
-        read(cb) {
-            this.push(count)
-            cb(null)
+const testaroonie = new Duplex<number, string>({
+    write(data: string, cb) {
+        console.log(data)
+        cb(null);
+    },
 
-            if (++count > 5) {
-                this.push(null);
-            }
-        }
-    })
-.pipeT<number>(new Transform<number, number>({
-    transform(data, cb) {
-        cb(null, (data * 2))
+    read(cb) {
+        this.push(1)
+        cb(null)
+        this.push(null)
     }
-}))
-//.pipeT(new Writable<number>({
-//     write(data, cb) {
-//         console.log(data)
-//         cb(null)
-//     }
-// }))
-
-
-testaroonie.on('data', (x) => {
-    console.log("Got data: " + x)
 })
 
+testaroonie.on('data', (d) => console.log(d));
+testaroonie.on('finish', () => console.log("finished"))
+
+testaroonie.write("hello")
+testaroonie.end("x")
