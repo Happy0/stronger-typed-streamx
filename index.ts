@@ -165,24 +165,3 @@ export class Transform<
         return super.end(data);
     }
 }
-
-let count = 0;
-
-const testaroonie = new Duplex<number, string>({
-    write(data: string, cb) {
-        console.log(data)
-        cb(null);
-    },
-
-    read(cb) {
-        this.push(1)
-        cb(null)
-        this.push(null)
-    }
-})
-
-testaroonie.on('data', (d) => console.log(d));
-testaroonie.on('finish', () => console.log("finished"))
-
-testaroonie.write("hello")
-testaroonie.end("x")
