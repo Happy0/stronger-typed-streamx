@@ -78,6 +78,7 @@ export  class Writable<
 interface IDuplex<Input, Output, M extends TypedDuplexEvents<Input, Output>>
   extends Readable<Input, M>, Writable<Output, M> {}
 
+
 export class Duplex<Input, Output, M extends TypedDuplexEvents<Input, Output> = TypedDuplexEvents<Input, Output>>
   extends StreamX.Duplex<M>
   implements IDuplex<Input, Output, M>
@@ -86,7 +87,7 @@ export class Duplex<Input, Output, M extends TypedDuplexEvents<Input, Output> = 
     super(duplexOptions);
   }
     pipeT<DuplexOut>(dest: Duplex<Input, DuplexOut, TypedDuplexEvents<Input, Output>>, drainedCallback?: (err: Error | null) => void): Duplex<Input, DuplexOut, TypedDuplexEvents<Input, Output>>;
-    pipeT<TransformOut>(dest: Transform<Input, TransformOut, TypedDuplexEvents<Input, Output>>, drainedCallback?: (err: Error | null) => void): Transform<Input, TransformOut, TypedDuplexEvents<Input, Output>>;
+    pipeT<TransformOut>(dest: Transform<Input, TransformOut, TypedTransformEvents<Input, TransformOut>>, drainedCallback?: (err: Error | null) => void): Transform<Input, TransformOut, TypedTransformEvents<Input, TransformOut>>;
 
     pipeT(
         dest: Writable<Output>,
@@ -117,14 +118,14 @@ export class Duplex<Input, Output, M extends TypedDuplexEvents<Input, Output> = 
 export class Transform<
   Input,
   Output,
-  M extends TypedDuplexEvents<Input, Output> = TypedDuplexEvents<Input, Output>,
-> extends StreamX.Transform<M> implements IDuplex<Input, Output, M> {
+  M extends TypedTransformEvents<Input, Output> = TypedTransformEvents<Input, Output>,
+> extends StreamX.Transform<M> {
 
   constructor(opts: TransformOptions<Transform<Input, Output>, Input, Output>) {
     super(opts);
   }
-    pipeT<DuplexOut>(dest: Duplex<Input, DuplexOut, TypedDuplexEvents<Input, Output>>, drainedCallback?: (err: Error | null) => void): Duplex<Input, DuplexOut, TypedDuplexEvents<Input, Output>>;
-    pipeT<TransformOut>(dest: Transform<Input, TransformOut, TypedDuplexEvents<Input, Output>>, drainedCallback?: (err: Error | null) => void): Transform<Input, TransformOut, TypedDuplexEvents<Input, Output>>;
+    pipeT<DuplexOut>(dest: Duplex<Input, DuplexOut, TypedDuplexEvents<Input, Output>>, drainedCallback?: (err: Error | null) => void): Duplex<Input, DuplexOut, TypedDuplexEvents<Input, DuplexOut>>;
+    pipeT<TransformOut>(dest: Transform<Input, TransformOut, TypedTransformEvents<Input, TransformOut>>, drainedCallback?: (err: Error | null) => void): Transform<Input, TransformOut, TypedTransformEvents<Input, TransformOut>>;
 
     pipeT(
         dest: Writable<Output>,
@@ -165,9 +166,9 @@ const testaroonie =
             }
         }
     })
-.pipeT<string>(new Transform<number, string>({
+.pipeT<number>(new Transform<number, number>({
     transform(data, cb) {
-        cb(null, (data * 2).toString())
+        cb(null, (data * 2))
     }
 }))
 //.pipeT(new Writable<number>({
