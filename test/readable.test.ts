@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { Readable, Writable } from "../index";
+import { Readable, Writable, Transform } from "../index";
 
 describe("Readable class tests", () => {
   type Count = {
@@ -140,6 +140,58 @@ describe("Readable class tests", () => {
     })
 
     expect(result).toStrictEqual([1,2,3,4,5,6,7,8,9,10])
+  })
+
+  test("Readable piped to transformer and then writable as expected", async () => {
+
+    class CountReader extends Readable<number> {
+      countUntilInclusive: number;
+      count = 1;
+
+      constructor(countUntilInclusive: number) {
+        super({})
+        this.countUntilInclusive = countUntilInclusive;
+      }
+
+      _read(cb: (err: Error | null) => void): void {
+        
+        this.push(this.count);
+
+        if (this.count === 10) {
+          this.push(null);
+        }
+        this.count++;
+
+        cb(null)
+      }
+    }
+
+    const transformer = new Transform<number, number>({
+      transform(data, cb) {
+          cb(null, data * 2)
+      },
+    })
+
+
+    const numbers: Array<number> = [];
+    const writer = new Writable<number>({
+      write(data, cb) {
+          numbers.push(data);
+          cb(null);
+      },
+    });
+
+    const stream = new CountReader(10).pipeT(transformer).pipeT(writer);
+
+    const result = await new Promise<Array<number>>((resolve, reject) => {
+      stream.on('finish', () => {
+        resolve(numbers)
+      });
+
+      stream.on('err', (err) => reject(err))
+    })
+
+    expect(result).toStrictEqual([1,2,3,4,5,6,7,8,9,10].map(num => num * 2))
   })
 
   test("Error event is emitted as expected", async () => {

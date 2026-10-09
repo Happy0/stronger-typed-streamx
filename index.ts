@@ -1,8 +1,11 @@
 import * as StreamX from "streamx";
 
 export type ReadableOptions<S extends Readable<O>, O> = Omit<StreamX.ReadableOptions<S>, 'mapReadable' | 'map'>;
-export type DuplexOptions<S extends Duplex<I,O>, I, O> = Omit<StreamX.DuplexOptions<S>, 'mapReadable' | 'mapWritable' | 'map'> 
-    & WritableOptions<S, O> & ReadableOptions<S,I>
+export type DuplexOptions<S extends Duplex<I,O>, I, O> = Omit<StreamX.DuplexOptions<S>, 'mapReadable' | 'mapWritable' | 'map' | 'write' | 'writev' > 
+    & {
+      write?(this: S, data: O, cb: (err: Error | null) => void): void
+      writev?(this: S, batch: O[], cb: (err: Error | null) => void): void
+    }
 
 export type WritableOptions<S extends Writable<O>, O> = Omit<StreamX.WritableOptions<S>, 'mapWritable' | 'map' | 'write' | 'writev'> & {
   write?(this: S, data: O, cb: (err: Error | null) => void): void
@@ -21,7 +24,7 @@ export type TypedTransformEvents<InputType, OutputType> = StreamX.TransformEvent
     data:[data: OutputType]
 } 
 
-export type TypedDuplexEvents<InputType, OutputType> = StreamX.DuplexEvents & TypedReadableEvents<InputType> & StreamX.WritableEvents;
+export type TypedDuplexEvents<InputType> = StreamX.DuplexEvents & TypedReadableEvents<InputType> & StreamX.WritableEvents;
 
 export class Readable<
   Output,
@@ -47,11 +50,6 @@ export class Readable<
     dest: Transform<Output, TransformOut>,
     drainedCallback?: (err: Error | null) => void
   ): Transform<Output, TransformOut>;
-
-  pipeT<DuplexOut>(
-    dest: Duplex<Output, DuplexOut>,
-    drainedCallback?: (err: Error | null) => void
-  ): Duplex<Output, DuplexOut>
 
   pipeT(
     dest: Writable<Output>,
@@ -80,28 +78,12 @@ export class Writable<
   }
 }
 
-interface IDuplex<Input, Output, M extends TypedDuplexEvents<Input, Output>>
-  extends Readable<Input, M>, Writable<Output, M> {}
-
-
-export class Duplex<Input, Output, M extends TypedDuplexEvents<Input, Output> = TypedDuplexEvents<Input, Output>>
+export class Duplex<Input, Output, M extends TypedDuplexEvents<Input> = TypedDuplexEvents<Input>>
   extends StreamX.Duplex<M>
-  implements IDuplex<Input, Output, M>
 {
   constructor(duplexOptions: DuplexOptions<Duplex<Input, Output>, Input, Output>) {
     super(duplexOptions);
   }
-    pipeT<DuplexOut>(dest: Duplex<Input, DuplexOut, TypedDuplexEvents<Input, Output>>, drainedCallback?: (err: Error | null) => void): Duplex<Input, DuplexOut, TypedDuplexEvents<Input, Output>>;
-    pipeT<TransformOut>(dest: Transform<Input, TransformOut, TypedTransformEvents<Input, TransformOut>>, drainedCallback?: (err: Error | null) => void): Transform<Input, TransformOut, TypedTransformEvents<Input, TransformOut>>;
-
-    pipeT(
-        dest: Writable<Output>,
-        drainedCallback?: (err: Error | null) => void,
-    ): Writable<Output>;
-
-    pipeT(dest: StreamX.Writable, drainedCallback?: (err: Error | null) => void) {
-        return super.pipe(dest, drainedCallback)
-    }
 
     unshift(data: Input | null): void {
         return super.unshift(data);
@@ -133,7 +115,7 @@ export class Transform<
   constructor(opts: TransformOptions<Transform<Input, Output>, Input, Output>) {
     super(opts);
   }
-    pipeT<DuplexOut>(dest: Duplex<Input, DuplexOut, TypedDuplexEvents<Input, Output>>, drainedCallback?: (err: Error | null) => void): Duplex<Input, DuplexOut, TypedDuplexEvents<Input, DuplexOut>>;
+    pipeT<DuplexOut>(dest: Duplex<Input, DuplexOut, TypedDuplexEvents<Input>>, drainedCallback?: (err: Error | null) => void): Duplex<Input, DuplexOut, TypedDuplexEvents<Input>>;
     pipeT<TransformOut>(dest: Transform<Input, TransformOut, TypedTransformEvents<Input, TransformOut>>, drainedCallback?: (err: Error | null) => void): Transform<Input, TransformOut, TypedTransformEvents<Input, TransformOut>>;
 
     pipeT(
