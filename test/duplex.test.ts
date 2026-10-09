@@ -25,11 +25,18 @@ describe("Duplex stream", () => {
             },
         })
 
-        const finishPromise = new Promise((resolve, reject) => {
-            stream.on('end', () => {resolve(null)})
+        const readFinishPromise = new Promise((resolve, reject) => {
+            stream.on('end', () => {
+                resolve(null)
+            })
             stream.on('error', (err) => {reject(err)})
         });
-        
+
+        const writeFinishPromise = new Promise((resolve, reject) => {
+            stream.on('finish', () => resolve(null))
+            stream.on('error', (err) => {reject(err)})
+        })
+
         stream.write(1)
         stream.write(2)
         stream.write(3)
@@ -37,7 +44,7 @@ describe("Duplex stream", () => {
 
         stream.on('data', (d) => strings.push(d));
 
-        await finishPromise;
+        await Promise.all([readFinishPromise, writeFinishPromise]);
 
         expect(numbers).toStrictEqual([1,2,3,4]);
         expect(strings).toStrictEqual(alphabet.split(''))

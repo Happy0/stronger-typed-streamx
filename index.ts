@@ -115,8 +115,6 @@ export class Transform<
   constructor(opts: TransformOptions<Transform<Input, Output>, Input, Output>) {
     super(opts);
   }
-    pipeT<DuplexOut>(dest: Duplex<Input, DuplexOut, TypedDuplexEvents<Input>>, drainedCallback?: (err: Error | null) => void): Duplex<Input, DuplexOut, TypedDuplexEvents<Input>>;
-    pipeT<TransformOut>(dest: Transform<Input, TransformOut, TypedTransformEvents<Input, TransformOut>>, drainedCallback?: (err: Error | null) => void): Transform<Input, TransformOut, TypedTransformEvents<Input, TransformOut>>;
 
     pipeT(
         dest: Writable<Output>,
@@ -135,11 +133,11 @@ export class Transform<
         return super.read() as Input;
     }
 
-    push(data: Input): boolean {
+    push(data: Input | null): boolean {
         return super.push(data)
     }
 
-    write(data: Output): boolean {
+    write(data: Input): boolean {
         return super.write(data)
     }
 
