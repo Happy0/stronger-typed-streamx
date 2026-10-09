@@ -98,7 +98,6 @@ describe("Readable class tests", () => {
   })
 
   test("Error event is emitted as expected", async () => {
-
     const readable = new Readable<string>({
       read (cb: (err: Error | null) => void) {
         cb(new Error("testaroonie"))
@@ -116,8 +115,5 @@ describe("Readable class tests", () => {
       .catch((err) => {
         expect(err).toStrictEqual(new Error("testaroonie"))
       })
-
   })
-
-
 });
